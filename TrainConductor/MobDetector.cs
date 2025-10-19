@@ -1,10 +1,10 @@
 ﻿using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVTrainConductor;
 using Lumina.Excel.Sheets;
-
 
 namespace SRankAssistant;
 
@@ -21,13 +21,18 @@ internal static class MobDetector
     private static readonly Dictionary<uint, string> AllMonsterNames = SERVICES.Data.GetExcelSheet<BNpcName>().ToDictionary(e => e.RowId, e => e.Singular.ToString());
 
     internal static void Initialize() => SERVICES.Framework.Update += OnUpdate;
-    internal static void Dispose() { SERVICES.Framework.Update -= OnUpdate; TrackedNpcs.Clear(); }
+
+    internal static void Dispose()
+    {
+        SERVICES.Framework.Update -= OnUpdate;
+        TrackedNpcs.Clear();
+    }
 
     private static void OnUpdate(IFramework framework)
     {
+        uint currentInstance = SERVICES.ClientState.Instance;
         HashSet<uint> currentObjects = new();
         List<MobLocation> patchMobs = ConductorWindow.storedData.GetPatchMobs();
-
         foreach (IGameObject obj in SERVICES.Objects)
         {
             if (obj is not IBattleNpc monster) continue;
@@ -40,7 +45,6 @@ internal static class MobDetector
             {
                 TrackedNpcData npcData = TrackedNpcs[obj.EntityId];
                 LOG.Debug($"KILLED MONSTER - ID: {npcData.DataId}, Name: {npcData.Name}");
-                TrackedNpcs[obj.EntityId] = new TrackedNpcData { DataId = npcData.DataId, Name = npcData.Name, IsDeadAndCounted = true };
                 MobLocation? matchedMob = patchMobs.Find(m => string.Equals(m.Mob, npcData.Name, StringComparison.OrdinalIgnoreCase));
                 if (matchedMob != null)
                 {

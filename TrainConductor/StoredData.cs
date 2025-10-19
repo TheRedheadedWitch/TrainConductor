@@ -57,6 +57,6 @@ public class MobLocation
     public string Zone { get; set; } = string.Empty;
     public float X { get; set; }
     public float Y { get; set; }
-    public string Instance { get; set; } = string.Empty;
+    public uint Instance { get; set; }
     public string Patch { get; set; } = "Uncategorized";
 }

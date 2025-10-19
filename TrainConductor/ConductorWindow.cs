@@ -67,7 +67,7 @@ internal class ConductorWindow : Window, IDisposable
         {
             string zone = CleanZone(newZone);
             string patch = DeterminePatchForZone(zone);
-            storedData.Mobs.Add(new() { Mob = CapitalizeEachWord(newMob.Trim()), Zone = zone, X = x, Y = y, Instance = newInstance.Trim(), Patch = patch });
+            storedData.Mobs.Add(new() { Mob = CapitalizeEachWord(newMob.Trim()), Zone = zone, X = x, Y = y, Instance = ParseInstanceId(newInstance.Trim()), Patch = patch });
             newMob = newZone = newX = newY = newInstance = string.Empty; storedData.Save();
         }
         ImGui.EndChild();
@@ -133,7 +133,7 @@ internal class ConductorWindow : Window, IDisposable
                     ImGui.SetCursorScreenPos(rowStart);
                     ImGui.Text(loc.Mob);
                     ImGui.TableNextColumn();
-                    ImGui.Text(string.IsNullOrEmpty(loc.Instance) ? loc.Zone : $"{loc.Zone} {GetInstanceMarker(ParseInstanceId(loc.Instance))}");
+                    ImGui.Text(loc.Instance == 0 ? loc.Zone : $"{loc.Zone} {GetInstanceMarker(loc.Instance)}");
                     ImGui.TableNextColumn();
                     ImGui.Text(loc.X.ToString("0.0"));
                     ImGui.TableNextColumn();
@@ -202,7 +202,7 @@ internal class ConductorWindow : Window, IDisposable
             string instance = string.Empty;
             int idx = line.IndexOf("Instance", coordEnd + 1, StringComparison.OrdinalIgnoreCase);
             if (idx > -1) instance = line[(idx + 8)..].Trim(); string patch = DeterminePatchForZone(zone);
-            storedData.Mobs.Add(new() { Mob = CapitalizeEachWord(mob), Zone = zone, X = x, Y = y, Instance = instance, Patch = patch });
+            storedData.Mobs.Add(new() { Mob = CapitalizeEachWord(mob), Zone = zone, X = x, Y = y, Instance = ParseInstanceId(instance), Patch = patch });
         }
         storedData.Save(); _currentCachedPatch = string.Empty;
     }
@@ -229,12 +229,15 @@ internal class ConductorWindow : Window, IDisposable
     {
         List<MobLocation> aliveMobs = storedData.Mobs.Where(m => m.Patch.Equals(storedData.SelectedPatch, StringComparison.OrdinalIgnoreCase)).ToList();
         if (aliveMobs.Count == 0) return;
+
         MobLocation targetMob = aliveMobs[0];
         string msg = storedData.ChatMessage.Trim();
         if (string.IsNullOrEmpty(msg) || msg.Length >= 500) return;
+
         msg = msg.Replace("<target>", targetMob.Mob);
-        uint instanceId = (uint)ParseInstanceId(targetMob.Instance);
+        uint instanceId = targetMob.Instance;
         (bool Enabled, string Prefix)[] chatTargets = new[] { (storedData.Yell, "/y "), (storedData.Shout, "/sh "), (storedData.Echo, "/e "), (storedData.Party, "/p "), (storedData.Say, "/s ") };
+
         foreach ((bool enabled, string prefix) in chatTargets)
             if (enabled)
             {
@@ -248,7 +251,7 @@ internal class ConductorWindow : Window, IDisposable
     private static List<MobLocation> GetFilteredMobs() => !storedData.SelectedPatch.Equals(_currentCachedPatch, StringComparison.OrdinalIgnoreCase) ? (_cachedPatchMobs = storedData.Mobs.Where(m => m.Patch.Equals(storedData.SelectedPatch, StringComparison.OrdinalIgnoreCase)).ToList(), _currentCachedPatch = storedData.SelectedPatch, _cachedPatchMobs).Item3 : _cachedPatchMobs;
     private static string CleanZone(string z) => new string(z.Where(c => c < 0xE000 || c > 0xF8FF).ToArray()).Trim();
     private static string DeterminePatchForZone(string z) => ZoneToPatch.FirstOrDefault(kv => CleanZone(z).IndexOf(kv.Key, StringComparison.OrdinalIgnoreCase) >= 0).Value ?? "ARR";
-    private static int ParseInstanceId(string i) => string.IsNullOrWhiteSpace(i) ? 0 : int.TryParse(i, out int v) ? v : i.Trim().ToUpperInvariant() switch { "ONE" => 1, "TWO" => 2, "THREE" => 3, "FOUR" => 4, "FIVE" => 5, "SIX" => 6, "SEVEN" => 7, "EIGHT" => 8, "NINE" => 9, _ => 0 };
-    private static string GetInstanceMarker(int id) => id switch { 1 => $"{(char)SeIconChar.Instance1}", 2 => $"{(char)SeIconChar.Instance2}", 3 => $"{(char)SeIconChar.Instance3}", 4 => $"{(char)SeIconChar.Instance4}", 5 => $"{(char)SeIconChar.Instance5}", 6 => $"{(char)SeIconChar.Instance6}", 7 => $"{(char)SeIconChar.Instance7}", 8 => $"{(char)SeIconChar.Instance8}", 9 => $"{(char)SeIconChar.Instance9}", _ => string.Empty };
+    private static uint ParseInstanceId(string i) => string.IsNullOrWhiteSpace(i) ? 0 : int.TryParse(i, out int v) ? (uint)v : i.Trim().ToUpperInvariant() switch { "ONE" => 1u, "TWO" => 2u, "THREE" => 3u, "FOUR" => 4u, "FIVE" => 5u, "SIX" => 6u, "SEVEN" => 7u, "EIGHT" => 8u, "NINE" => 9u, _ => 0u };
+    private static string GetInstanceMarker(uint id) => id switch { 1u => $"{(char)SeIconChar.Instance1}", 2u => $"{(char)SeIconChar.Instance2}", 3u => $"{(char)SeIconChar.Instance3}", 4u => $"{(char)SeIconChar.Instance4}", 5u => $"{(char)SeIconChar.Instance5}", 6u => $"{(char)SeIconChar.Instance6}", 7u => $"{(char)SeIconChar.Instance7}", 8u => $"{(char)SeIconChar.Instance8}", 9u => $"{(char)SeIconChar.Instance9}", _ => string.Empty };
     public void Dispose() { }
 }

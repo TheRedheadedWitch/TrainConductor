@@ -359,8 +359,7 @@ internal class ConfigurationWindow : Window, IDisposable
         .Replace("<expansion>", ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex])
         .Replace("<location>", AetheryteNames.Count > 0 ? AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex] : string.Empty)
         .Replace("<@>", GetExpansionTag(ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex]))
-        .Replace("<time>", $"<t:{new DateTimeOffset(DateTime.UtcNow.TimeOfDay.TotalMinutes > departureHour * 60 + departureMinute ? DateTime.UtcNow.Date.AddDays(1).AddHours(departureHour).AddMinutes(departureMinute) : DateTime.UtcNow.Date.AddHours(departureHour).AddMinutes(departureMinute)).ToUnixTimeSeconds()}:R>");
-
+        .Replace("<time>", $"<t:{new DateTimeOffset((DateTime.Now.TimeOfDay.TotalMinutes > departureHour * 60 + departureMinute ? DateTime.Now.Date.AddDays(1).AddHours(departureHour).AddMinutes(departureMinute) : DateTime.Now.Date.AddHours(departureHour).AddMinutes(departureMinute))).ToUnixTimeSeconds()}:R>");
 
     private SeString ParseAnnouncementmessage()
     {
