@@ -229,12 +229,15 @@ internal class ConductorWindow : Window, IDisposable
     {
         List<MobLocation> aliveMobs = storedData.Mobs.Where(m => m.Patch.Equals(storedData.SelectedPatch, StringComparison.OrdinalIgnoreCase)).ToList();
         if (aliveMobs.Count == 0) return;
+
         MobLocation targetMob = aliveMobs[0];
         string msg = storedData.ChatMessage.Trim();
         if (string.IsNullOrEmpty(msg) || msg.Length >= 500) return;
+
         msg = msg.Replace("<target>", targetMob.Mob);
         uint instanceId = (uint)ParseInstanceId(targetMob.Instance);
         (bool Enabled, string Prefix)[] chatTargets = new[] { (storedData.Yell, "/y "), (storedData.Shout, "/sh "), (storedData.Echo, "/e "), (storedData.Party, "/p "), (storedData.Say, "/s ") };
+
         foreach ((bool enabled, string prefix) in chatTargets)
             if (enabled)
             {
