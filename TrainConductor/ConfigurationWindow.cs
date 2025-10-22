@@ -216,7 +216,7 @@ internal class ConfigurationWindow : Window, IDisposable
             {
                 parsedOutput = Parse();
             }
-            catch { } 
+            catch (Exception ex) { LOG.Debug($"I had to catch this because it was producing an error, but it runs fine ... {ex}"); } 
             ImGui.Text("Discord Ready Output");
             ImGui.SameLine();
             if (ImGuiComponents.IconButton(FontAwesomeIcon.Copy))
