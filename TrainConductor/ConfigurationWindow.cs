@@ -60,22 +60,17 @@ internal class ConfigurationWindow : Window, IDisposable
             IconOffset = new Vector2(1, 1),
             Click = _ => Util.OpenLink("https://ko-fi.com/theredheadedwitch")
         });
-
         Size = new Vector2(450, 400);
         SizeCondition = ImGuiCond.FirstUseEver;
-
         DateTime initialTime = DateTime.Now.AddMinutes(30);
         departureHour = initialTime.Hour;
         departureMinute = initialTime.Minute;
-
         SERVICES.Framework.RunOnTick(() =>
         {
             try { player = SERVICES.ClientState.LocalPlayer; }
             catch (Exception ex) { LOG.Error("player error", ex); }
         }).Wait();
-
         IEnumerable<Aetheryte> aetherytes = SERVICES.Data.GetExcelSheet<Aetheryte>().Where(a => a.PlaceName.Value.RowId != 0 && a.Territory.RowId != 0);
-
         foreach (Aetheryte a in aetherytes)
         {
             string aetheryteName = a.PlaceName.Value.Name.ToString();
@@ -174,14 +169,12 @@ internal class ConfigurationWindow : Window, IDisposable
         ImGui.PushItemWidth(250f);
         DrawAetheryteDropdown();
         ImGui.PopItemWidth();
-
         ImGui.RadioButton("None", ref Instance, 0u); ImGui.SameLine();
         ImGui.RadioButton("Instance 1", ref Instance, 1u); ImGui.SameLine();
         ImGui.RadioButton("Instance 2", ref Instance, 2u); ImGui.SameLine();
         ImGui.RadioButton("Instance 3", ref Instance, 3u); ImGui.SameLine();
         ImGui.RadioButton("Instance 4", ref Instance, 4u); ImGui.SameLine();
         ImGui.RadioButton("Instance 5", ref Instance, 5u);
-
         ImGui.Text("Departure Time (HH:MM)");
         ImGui.SameLine();
         ImGui.SetCursorPosX(200);
@@ -218,7 +211,12 @@ internal class ConfigurationWindow : Window, IDisposable
                 ConductorWindow.storedData.Save();
             }
             ImGui.Separator();
-            string parsedOutput = Parse();
+            string parsedOutput = string.Empty;
+            try
+            {
+                parsedOutput = Parse();
+            }
+            catch { } 
             ImGui.Text("Discord Ready Output");
             ImGui.SameLine();
             if (ImGuiComponents.IconButton(FontAwesomeIcon.Copy))
@@ -311,9 +309,7 @@ internal class ConfigurationWindow : Window, IDisposable
             ImGui.Text("In-Game Chat Preview");
             ImGui.InputTextMultiline("##parsedInGameOutput", ref parsedInGameOutput, 400, new Vector2(-1, 50), ImGuiInputTextFlags.ReadOnly);
             if (ImGui.Button("Send Chat Announcement", new Vector2(-1, 0)))
-            {
                 SendChat();
-            }
             ImGui.EndTable();
         }
     }
