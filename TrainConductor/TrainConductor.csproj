@@ -9,6 +9,7 @@
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 	<ItemGroup>
+	  <Content Include="images\icon.png" />
 	  <Content Include="TrainConductor.json" />
 	</ItemGroup>
 </Project>

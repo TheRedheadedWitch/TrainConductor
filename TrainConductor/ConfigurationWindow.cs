@@ -7,6 +7,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Data.Parsing;
 using Lumina.Excel.Sheets;
 using System.Numerics;
@@ -319,36 +320,23 @@ internal class ConfigurationWindow : Window, IDisposable
 
     private unsafe void SendChat()
     {
-        SeString msg = ParseAnnouncementmessage();
-
-        (bool Enabled, string Prefix)[] chatTargets = new[]
+        if (AetheryteMapData.TryGetValue(AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex], out (string Zone, float X, float Y) aethData))
         {
-            (ConductorWindow.storedData.AnnounceYell, "/y "),
-            (ConductorWindow.storedData.AnnounceShout, "/sh "),
-            (ConductorWindow.storedData.AnnounceNN, "/b "),
-            (ConductorWindow.storedData.AnnounceParty, "/p "),
-            (ConductorWindow.storedData.AnnounceLS1, "/l1 "),
-            (ConductorWindow.storedData.AnnounceLS2, "/l2 "),
-            (ConductorWindow.storedData.AnnounceLS3, "/l3 "),
-            (ConductorWindow.storedData.AnnounceLS4, "/l4 "),
-            (ConductorWindow.storedData.AnnounceLS5, "/l5 "),
-            (ConductorWindow.storedData.AnnounceLS6, "/l6 "),
-            (ConductorWindow.storedData.AnnounceLS7, "/l7 "),
-            (ConductorWindow.storedData.AnnounceLS8, "/l8 "),
-            (ConductorWindow.storedData.AnnounceCWLS1, "/cwl1 "),
-            (ConductorWindow.storedData.AnnounceCWLS2, "/cwl2 "),
-            (ConductorWindow.storedData.AnnounceCWLS3, "/cwl3 "),
-            (ConductorWindow.storedData.AnnounceCWLS4, "/cwl4 "),
-            (ConductorWindow.storedData.AnnounceCWLS5, "/cwl5 "),
-            (ConductorWindow.storedData.AnnounceCWLS6, "/cwl6 "),
-            (ConductorWindow.storedData.AnnounceCWLS7, "/cwl7 "),
-            (ConductorWindow.storedData.AnnounceCWLS8, "/cwl8 ")
-        };
+            Aetheryte aeth = SERVICES.Data.GetExcelSheet<Aetheryte>().FirstOrDefault(a => a.PlaceName.Value.Name.ToString() == AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex]);
+            TerritoryType territory = SERVICES.Data.GetExcelSheet<TerritoryType>().GetRow(aeth.Territory.RowId);
+            Map map = SERVICES.Data.GetExcelSheet<Map>().GetRow(aeth.Map.RowId);
+            float mapX = ((41.0f / (map.SizeFactor / 100f)) * ((aethData.X + 1024.0f) / 2048.0f)) + 1.0f;
+            float mapY = ((41.0f / (map.SizeFactor / 100f)) * ((aethData.Y + 1024.0f) / 2048.0f)) + 1.0f;
+            LOG.Debug($"Map coords: {mapX}, {mapY}");
+            MapLinks.SetFlag(territory.RowId, map.RowId, mapX, mapY);
+        }
+        SeString msg = ParseAnnouncementmessage();
+        (bool Enabled, string Prefix)[] chatTargets = new[] {(ConductorWindow.storedData.AnnounceYell, "/y "), (ConductorWindow.storedData.AnnounceShout, "/sh "), (ConductorWindow.storedData.AnnounceNN, "/b "), (ConductorWindow.storedData.AnnounceParty, "/p "), (ConductorWindow.storedData.AnnounceLS1, "/l1 "), (ConductorWindow.storedData.AnnounceLS2, "/l2 "), (ConductorWindow.storedData.AnnounceLS3, "/l3 "), (ConductorWindow.storedData.AnnounceLS4, "/l4 "), (ConductorWindow.storedData.AnnounceLS5, "/l5 "), (ConductorWindow.storedData.AnnounceLS6, "/l6 "), (ConductorWindow.storedData.AnnounceLS7, "/l7 "), (ConductorWindow.storedData.AnnounceLS8, "/l8 "), (ConductorWindow.storedData.AnnounceCWLS1, "/cwl1 "), (ConductorWindow.storedData.AnnounceCWLS2, "/cwl2 "), (ConductorWindow.storedData.AnnounceCWLS3, "/cwl3 "), (ConductorWindow.storedData.AnnounceCWLS4, "/cwl4 "), (ConductorWindow.storedData.AnnounceCWLS5, "/cwl5 "), (ConductorWindow.storedData.AnnounceCWLS6, "/cwl6 "), (ConductorWindow.storedData.AnnounceCWLS7, "/cwl7 "), (ConductorWindow.storedData.AnnounceCWLS8, "/cwl8 ")};
         foreach ((bool enabled, string prefix) in chatTargets)
         {
             if (!enabled) continue;
-            SeString finalMessage = new SeStringBuilder().AddText(prefix).Append(msg).Build();
-            using Utf8String utf8Message = new(finalMessage.Encode());
+            SeString chatMessage = new SeStringBuilder().AddText(prefix).Append(msg).Build();
+            using Utf8String utf8Message = new(chatMessage.Encode());
             UIModule.Instance()->ProcessChatBoxEntry(&utf8Message);
         }
     }
@@ -363,39 +351,12 @@ internal class ConfigurationWindow : Window, IDisposable
 
     private SeString ParseAnnouncementmessage()
     {
-        string data = ConductorWindow.storedData.CustomAnnounceMessage;
-        string selectedServer = player!.CurrentWorld.Value.Name.ToString();
-        string selectedExpansion = ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex];
-        string selectedAetheryte = AetheryteNames.Count > 0 ? AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex] : string.Empty;
-        string playerName = string.Empty;
-        if (player != null)
-            playerName = player!.Name.ToString();
-        DateTime now = DateTime.Now;
-        DateTime target = new DateTime(now.Year, now.Month, now.Day, departureHour, departureMinute, 0, DateTimeKind.Local);
-        if (target < now) target = target.AddDays(1);
-        TimeSpan timeUntilDeparture = target - now;
-        int minutes = (int)Math.Round(timeUntilDeparture.TotalMinutes);
-        string timeStr = $"{minutes} minute{(minutes != 1 ? "s" : string.Empty)}";
-        string expansionTag = GetExpansionTag(selectedExpansion);
-        string processedMessage = data.Replace("<name>", playerName).Replace("<server>", selectedServer).Replace("<expansion>", selectedExpansion).Replace("<time>", timeStr);
+        TimeSpan timeUntilDeparture = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local) < DateTime.Now ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local).AddDays(1) - DateTime.Now : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local) - DateTime.Now;
+        string processedMessage = ConductorWindow.storedData.CustomAnnounceMessage.Replace("<name>", player != null ? player.Name.ToString() : string.Empty).Replace("<server>", player!.CurrentWorld.Value.Name.ToString()).Replace("<expansion>", ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex]).Replace("<time>", $"{(int)Math.Round(timeUntilDeparture.TotalMinutes)} minute{((int)Math.Round(timeUntilDeparture.TotalMinutes) != 1 ? "s" : string.Empty)}");
         if (processedMessage.Contains("<location>"))
-        {
-            (string Zone, float X, float Y) aethData = AetheryteMapData[selectedAetheryte];
-            Aetheryte aetheryte = SERVICES.Data.GetExcelSheet<Aetheryte>().First(a => a.PlaceName.Value.Name.ToString() == selectedAetheryte);
-            Map map = SERVICES.Data.GetExcelSheet<Map>().GetRow(aetheryte.Map.RowId);
-            SeString mapLink = MapLinks.GenerateMapLinkSeString(aethData.Zone, WorldCoordToMapCoord(aethData.X, map.SizeFactor / 100f, map.OffsetX), WorldCoordToMapCoord(aethData.Y, map.SizeFactor / 100f, map.OffsetY), Instance);
-            string[] parts = processedMessage.Split(new string[] { "<location>" }, StringSplitOptions.None);
-            SeStringBuilder builder = new SeStringBuilder();
-            builder.AddText(parts[0]);
-            builder.Append(mapLink);
-            if (parts.Length > 1)
-                builder.AddText(parts[1]);
-            return builder.Build();
-        }
+            processedMessage = processedMessage.Replace("<location>", "<flag>");
         return new SeStringBuilder().AddText(processedMessage).Build();
     }
-
-    public static float WorldCoordToMapCoord(float worldCoord, float scale, short offset) => ((((worldCoord + offset * 0.001f) * scale) + 1024.0f) * (41.0f / 2048.0f)) + 1.0f;
 
     private string GetExpansionTag(string expansion)
     {
