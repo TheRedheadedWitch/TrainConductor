@@ -1,9 +1,18 @@
 {
-  "Author": "Redheaded Witch",
-  "Name": "TrainConductor",
+  "Author": "The Redheaded Witch",
+  "Name": "Train Conductor",
   "Punchline": "Choo Choo",
-  "Description": "Import your data from Turtle, then manage everything in the GUI!",
-  "ApplicableVersion": "any",
+  "Description": "Import your data from Turtle, then manage everything in the GUI!\n\nThere is a known bug with the dragging of List of monsters. It is completely cosmetic, and the arrows work without issue. I will work on this.",
   "Tags": [ "Hunt", "Train", "Utility" ],
-  "CategoryTags": [ "Utility", "UI" ]
+  "CategoryTags": [ "Utility", "UI" ],
+  "InternalName": "TrainConductor",
+  "RepoUrl": "https://github.com/TheRedheadedWitch/TrainConductor",
+  "DownloadLinkInstall": "https://github.com/TheRedheadedWitch/TrainConductor/releases/download/v0.0.1/TrainConductor.zip",
+  "DownloadLinkTesting": "https://github.com/TheRedheadedWitch/TrainConductor/releases/download/v0.0.1/TrainConductor.zip",
+  "DownloadLinkUpdate": "https://github.com/TheRedheadedWitch/TrainConductor/releases/download/v0.0.1/TrainConductor.zip",
+  "IconUrl": "https://github.com/TheRedheadedWitch/FashionReport/raw/main/FashionReport/images/icon.png",
+  "AssemblyVersion": "1.0.0",
+  "ApplicableVersion": "any",
+  "DalamudApiLevel": "13",
+  "Changelog": "Fixed some minor bugs."
 }
