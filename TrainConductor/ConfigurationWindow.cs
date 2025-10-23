@@ -341,7 +341,7 @@ internal class ConfigurationWindow : Window, IDisposable
         .Replace("<name>", player!.Name.ToString())
         .Replace("<server>", player!.CurrentWorld.Value.Name.ToString())
         .Replace("<expansion>", ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex])
-        .Replace("<location>", AetheryteNames.Count > 0 ? AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex] : string.Empty)
+        .Replace("<location>", AetheryteNames.Count > 0 ? AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex] + MapLinks.GenerateInstanceString(Instance): string.Empty)
         .Replace("<@>", GetExpansionTag(ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex]))
         .Replace("<time>", $"<t:{new DateTimeOffset((DateTime.Now.TimeOfDay.TotalMinutes > departureHour * 60 + departureMinute ? DateTime.Now.Date.AddDays(1).AddHours(departureHour).AddMinutes(departureMinute) : DateTime.Now.Date.AddHours(departureHour).AddMinutes(departureMinute))).ToUnixTimeSeconds()}:R>");
 
@@ -350,7 +350,7 @@ internal class ConfigurationWindow : Window, IDisposable
         TimeSpan timeUntilDeparture = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local) < DateTime.Now ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local).AddDays(1) - DateTime.Now : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local) - DateTime.Now;
         string processedMessage = ConductorWindow.storedData.CustomAnnounceMessage.Replace("<name>", player != null ? player.Name.ToString() : string.Empty).Replace("<server>", player!.CurrentWorld.Value.Name.ToString()).Replace("<expansion>", ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex]).Replace("<time>", $"{(int)Math.Round(timeUntilDeparture.TotalMinutes)} minute{((int)Math.Round(timeUntilDeparture.TotalMinutes) != 1 ? "s" : string.Empty)}");
         if (processedMessage.Contains("<location>"))
-            processedMessage = processedMessage.Replace("<location>", "<flag>");
+            processedMessage = processedMessage.Replace("<location>", "<flag>" + MapLinks.GenerateInstanceString(Instance));
         return new SeStringBuilder().AddText(processedMessage).Build();
     }
 

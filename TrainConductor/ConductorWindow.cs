@@ -232,7 +232,7 @@ internal class ConductorWindow : Window, IDisposable
         MobLocation targetMob = aliveMobs[0];
         string msg = storedData.ChatMessage.Trim();
         if (string.IsNullOrEmpty(msg)) return;
-        msg = msg.Replace("<target>", targetMob.Mob);
+        msg = msg.Replace("<target>", targetMob.Mob + GetInstanceMarker(targetMob.Instance));
         if (!MapLinks.Maps.TryGetValue(targetMob.Zone, out (uint TerritoryId, uint MapId) mapInfo))
         {
             LOG.Warning($"[MapLink] Could not find map info for zone: {targetMob.Zone}");
