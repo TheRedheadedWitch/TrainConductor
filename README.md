@@ -1,34 +1,20 @@
-The UI is ugly as hell, I know and I hate looking at it. I am not sure exactly how I will clean it up yet (I will take suggestions) but it works!
+# Train Conductor
+Train Conductor was created because out of all the resources I could find, they were mostly for those who benefited from those conducting trains and not about helping people actually conduct them. Well ... it's time to change that and here we are!
 
-Here is how it works! First you take a scout report from turtle and click the EXPORT button at the top right. Then click the IMPORT button to import all the data into the plugin.
+If you like this plugin and find it useful, please consider donating to my [Ko-Fi](https://ko-fi.com/theredheadedwitch).
 
-Now your main window had 3 main sections. The right side is your list of A Ranks. They are sorted by patch (drop down at the top allows you to change with patch you see). The top monster is the one you are currently about to hunt.
+I wrote this program to save time conducting trains. To test it, I had to learn how to conduct trains and run them myself. First thing I learned, it was very tedious. A lot of preparing in advance! Well, no longer is that the case!
 
-The edit box on the top left is your message you plan to send out. There are placeholders that you can use here to customize your messages ...
+I didn't want everyone seeing the same messages that used the plugin, people would know ... I didn't want this. Train Conductor has no default messages, you create your own to be unique to you! So you can be as basic or as complex as you like! Setting up messages is easy, you type your message in the message text box and view it in the section that shows the output, then you use it. The catch is that Train Conductor uses placeholders just like FFXIV, though our placeholders are not case sensative like FFXIV. A list of all placeholders can be found by clicking the ? in the menu bar at the top of the window.
 
-<target> will be replaced with the name of the A Rank (Queen Hawk)
-<location> will be replaced with <flag> and a link is generated prior for the location of the X and Y from the list for this A Rank
+Some features I built in are.
 
-The Send To section allows you to decide which chats to send the information to. Echo is in there so you can test it out without anyone else seeing.
-Clicking the Send button will send the message in the edit box above after being parsed to the respected chats.
+> Automatic purging of monsters when they die.<br>
+> Send won't allow you to resend for 3 seconds to prevent accidental spamming<br>
+> Faloop's A Train Discord easy to copy message (don't forget <@> for the automatical role)
 
-Now this might seem like this is nice, but WAIT ... THERE IS MORE!
+Importing monsters into the plugin does take a whole 5 seconds. You have to actually go to your browser where you have your https://scout.wobbuffet.net/ scout report and click that export button at the top right of the web page, then click the import button on the plugin. I know it requires 2 whole button clicks which is a lot of work ... I will look into a way to speed this up eventually!
 
-Click the SETTINGS button on the menu bar!
+So 2 clicks, and you have your monsters imported. They are automatically removed as you go. You have your custom message which saves automatically and loads each time you open the plugin, so it is ready to go. You just have to click that SEND button each time you want to broadcast the next location. I know ... I know ... that is a lot of work to ask you to do but if I automated it from the previous kill's death, then Dalamud would have flagged it as automation and it would not pass the approval process. If this is a feature that you REALLY ... REALLY want then I can be persuaded to set up a second repository for it as a 3rd party plugin. Personally though, I like clicking that send button each time so I would ask you give it a try first before considering complete automation of it.
 
-Yes, you are seeing this right ... you can actually set up your Discord Message in advance and also auto send a message to your chats that you choose. The edit boxes up top are what you fill in, the bottom ones won't let you type because they just show you what will be output.
-
-There is a copy button for the Discord message so you can paste it in Discord without much effort.
-
-Placesholders:
-
-<server> Your current server
-<expansion> The expansion from the drop down on this page (not the main window)
-<location> The location of where you are starting your train (for announcements, this creates a flag and turns to <flag>
-<name> Puts your name in there (pointless I know but I enjoyed making the parsing)
-<@> This one is specifically for the Discord side, it puts in the @ for Discord if you are posting to Faloop's discord. There is an issue where you have to backspace once you paste and then select it because their image is unique, working on fixing this though.
-<time> In discord, this is a discord timestamp that will tell tell everyone how long until it starts (counts down automatically). In Announcement Message, it will put the time frame in minutes until start (10 minutes)
-
-Remember that this is for you to add your own custom messages but not have to worry about changing the format you like that often.
-
-If you have any suggestions, SPECIALLY ABOUT THE UI because I do believe the UI needs some love, please feel free to let me know!
+If you have any suggestions or find any bugs, please submit them so I can get on them. 
