@@ -7,8 +7,6 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using Lumina.Data.Parsing;
 using Lumina.Excel.Sheets;
 using System.Numerics;
 
@@ -20,12 +18,14 @@ internal class ConfigurationWindow : Window, IDisposable
     private static List<string> AetheryteNames = SERVICES.Data.GetExcelSheet<Aetheryte>().Where(a => a.PlaceName.Value.RowId != 0).Select(a => a.PlaceName.Value.Name.ToString()).Where(n => !string.IsNullOrEmpty(n)).ToList();
     private static Dictionary<string, (string Zone, float X, float Y)> AetheryteMapData = new();
     private static readonly List<string> ServerList = new() { "Aegis", "Adamantoise", "Alexander", "Alpha", "Anima", "Asura", "Atomos", "Bahamut", "Balmung", "Belias", "Behemoth", "Bismarck", "Brynhildr", "Carbuncle", "Cactuar", "Cerberus", "Chocobo", "Coeurl", "Diabolos", "Durandal", "Exodus", "Famfrit", "Fenrir", "Garuda", "Gilgamesh", "Golem", "Gungnir", "Hades", "Halicarnassus", "Hyperion", "Ifrit", "Ixion", "Jenova", "Kraken", "Kujata", "Lamia", "Leviathan", "Louisoix", "Malboro", "Mandragora", "Marilith", "Masamune", "Mateus", "Midgardsormr", "Midnight", "Moogle", "Odin", "Omega", "Pandaemonium", "Phantom", "Phoenix", "Raiden", "Ramuh", "Rafflesia", "Ridill", "Sagittarius", "Sephirot", "Shinryu", "Shiva", "Siren", "Spriggan", "Tonberry", "Tiamat", "Titan", "Twintania", "Ultima", "Ultros", "Unicorn", "Valefor", "Yojimbo", "Zalera", "Zeromus", "Zodiark" };
+    private DateTime _lastAnnouncementTime = DateTime.MinValue;
+    private readonly TimeSpan _announcementCooldown = TimeSpan.FromSeconds(3);
     private string labelName = string.Empty;
     private string aetheryteFilter = string.Empty;
     private string serverFilter = string.Empty;
     private string boardingLocation = string.Empty;
-    private int departureHour;
-    private int departureMinute;
+    internal int departureHour;
+    internal int departureMinute;
     private string customTag = string.Empty;
     private IPlayerCharacter? player = null;
     private bool AnnounceSay { get; set; }
@@ -53,23 +53,21 @@ internal class ConfigurationWindow : Window, IDisposable
 
     public ConfigurationWindow() : base("Train Conductor Configuration")
     {
-        TitleBarButtons.Add(new()
-        {
-            ShowTooltip = () => ImGui.SetTooltip("Support Redheaded Witch on Ko-fi"),
-            Icon = FontAwesomeIcon.Heart,
-            IconOffset = new Vector2(1, 1),
-            Click = _ => Util.OpenLink("https://ko-fi.com/theredheadedwitch")
-        });
+        TitleBarButtons.Add(new() { ShowTooltip = () => ImGui.SetTooltip("Open Help Window"), Icon = FontAwesomeIcon.Question, IconOffset = new Vector2(1, 1), Click = _ => TrainConductor.HelpWin.IsOpen = true });
+        TitleBarButtons.Add(new() { ShowTooltip = () => ImGui.SetTooltip("Support Redheaded Witch on Ko-fi"), Icon = FontAwesomeIcon.Heart, IconOffset = new Vector2(1, 1), Click = _ => Util.OpenLink("https://ko-fi.com/theredheadedwitch") });
         Size = new Vector2(450, 400);
         SizeCondition = ImGuiCond.FirstUseEver;
         DateTime initialTime = DateTime.Now.AddMinutes(30);
         departureHour = initialTime.Hour;
         departureMinute = initialTime.Minute;
+        try
+        {
         SERVICES.Framework.RunOnTick(() =>
         {
             try { player = SERVICES.ClientState.LocalPlayer; }
             catch (Exception ex) { LOG.Error("player error", ex); }
-        }).Wait();
+        });
+        } catch (Exception ex) { LOG.Error("player error", ex); }
         IEnumerable<Aetheryte> aetherytes = SERVICES.Data.GetExcelSheet<Aetheryte>().Where(a => a.PlaceName.Value.RowId != 0 && a.Territory.RowId != 0);
         foreach (Aetheryte a in aetherytes)
         {
@@ -163,22 +161,25 @@ internal class ConfigurationWindow : Window, IDisposable
             ImGui.EndCombo();
         }
         ImGui.PopItemWidth();
+
         ImGui.Text("Gathering Location: ");
         ImGui.SameLine();
         ImGui.SetCursorPosX(200);
         ImGui.PushItemWidth(250f);
         DrawAetheryteDropdown();
         ImGui.PopItemWidth();
+
         ImGui.RadioButton("None", ref Instance, 0u); ImGui.SameLine();
         ImGui.RadioButton("Instance 1", ref Instance, 1u); ImGui.SameLine();
         ImGui.RadioButton("Instance 2", ref Instance, 2u); ImGui.SameLine();
         ImGui.RadioButton("Instance 3", ref Instance, 3u); ImGui.SameLine();
         ImGui.RadioButton("Instance 4", ref Instance, 4u); ImGui.SameLine();
         ImGui.RadioButton("Instance 5", ref Instance, 5u);
+
         ImGui.Text("Departure Time (HH:MM)");
         ImGui.SameLine();
         ImGui.SetCursorPosX(200);
-        ImGui.PushItemWidth(60f);
+        ImGui.PushItemWidth(25f);
         string hourStr = departureHour.ToString();
         if (ImGui.InputText("##hour", ref hourStr, 2, ImGuiInputTextFlags.CharsDecimal))
         {
@@ -190,7 +191,7 @@ internal class ConfigurationWindow : Window, IDisposable
         ImGui.SameLine();
         ImGui.Text(":");
         ImGui.SameLine();
-        ImGui.PushItemWidth(60f);
+        ImGui.PushItemWidth(25f);
         string minuteStr = departureMinute.ToString("00");
         if (ImGui.InputText("##minute", ref minuteStr, 2, ImGuiInputTextFlags.CharsDecimal))
         {
@@ -199,7 +200,9 @@ internal class ConfigurationWindow : Window, IDisposable
             departureMinute = m;
         }
         ImGui.PopItemWidth();
+
         ImGui.Separator();
+
         if (ImGui.BeginTable("Outputs", 2, ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable))
         {
             ImGui.TableNextColumn();
@@ -211,17 +214,17 @@ internal class ConfigurationWindow : Window, IDisposable
                 ConductorWindow.storedData.Save();
             }
             ImGui.Separator();
+
             string parsedOutput = string.Empty;
-            try
-            {
-                parsedOutput = Parse();
-            }
-            catch (Exception ex) { LOG.Debug($"I had to catch this because it was producing an error, but it runs fine ... {ex}"); } 
+            try { parsedOutput = ParseData.Parse(ConductorWindow.storedData.Discord, Instance, departureHour, departureMinute); }
+            catch (Exception ex) { LOG.Debug($"Safety Catch ... {ex}"); }
+
             ImGui.Text("Discord Ready Output");
             ImGui.SameLine();
             if (ImGuiComponents.IconButton(FontAwesomeIcon.Copy))
                 ImGui.SetClipboardText(parsedOutput);
             ImGui.InputTextMultiline("##parsedOutput", ref parsedOutput, 4096, new Vector2(-1, 200), ImGuiInputTextFlags.ReadOnly);
+
             ImGui.TableNextColumn();
             bool nn = ConductorWindow.storedData.AnnounceNN;
             bool yell = ConductorWindow.storedData.AnnounceYell;
@@ -244,15 +247,19 @@ internal class ConfigurationWindow : Window, IDisposable
             bool cwls7 = ConductorWindow.storedData.AnnounceCWLS7;
             bool cwls8 = ConductorWindow.storedData.AnnounceCWLS8;
             bool changed = false;
+
             ImGui.PushItemWidth(-1);
             string CustomAnnounceMessage = ConductorWindow.storedData.CustomAnnounceMessage;
             ImGui.Text("Announcement Message");
+            ImGui.PushTextWrapPos();
             if (ImGui.InputTextMultiline("##CustomAnnounceMessage", ref CustomAnnounceMessage, 400, new Vector2(-1, 50)))
             {
                 ConductorWindow.storedData.CustomAnnounceMessage = CustomAnnounceMessage;
                 ConductorWindow.storedData.Save();
             }
+            ImGui.PopTextWrapPos();
             ImGui.PopItemWidth();
+
             ImGui.Separator();
             ImGui.Text("Chat Channels:");
             float orig = ImGui.GetCursorPosX();
@@ -261,6 +268,7 @@ internal class ConfigurationWindow : Window, IDisposable
             changed |= ImGui.Checkbox("NN", ref nn); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 240);
             changed |= ImGui.Checkbox("Party", ref party);
             ImGui.Separator();
+
             ImGui.Text("Linkshells:");
             changed |= ImGui.Checkbox("LS1", ref ls1); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 80);
             changed |= ImGui.Checkbox("LS2", ref ls2); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 160);
@@ -271,6 +279,7 @@ internal class ConfigurationWindow : Window, IDisposable
             changed |= ImGui.Checkbox("LS7", ref ls7); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 240);
             changed |= ImGui.Checkbox("LS8", ref ls8);
             ImGui.Separator();
+
             ImGui.Text("Cross-World Linkshells:");
             changed |= ImGui.Checkbox("CWLS1", ref cwls1); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 80);
             changed |= ImGui.Checkbox("CWLS2", ref cwls2); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 160);
@@ -280,6 +289,7 @@ internal class ConfigurationWindow : Window, IDisposable
             changed |= ImGui.Checkbox("CWLS6", ref cwls6); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 160);
             changed |= ImGui.Checkbox("CWLS7", ref cwls7); ImGui.SameLine(); ImGui.SetCursorPosX(orig + 240);
             changed |= ImGui.Checkbox("CWLS8", ref cwls8);
+
             if (changed)
             {
                 ConductorWindow.storedData.AnnounceNN = nn;
@@ -304,12 +314,28 @@ internal class ConfigurationWindow : Window, IDisposable
                 ConductorWindow.storedData.AnnounceCWLS8 = cwls8;
                 ConductorWindow.storedData.Save();
             }
+
             ImGui.Separator();
-            string parsedInGameOutput = ParseAnnouncementmessage().TextValue;
+
+            string parsedInGameOutput = ParseData.Parse(ConductorWindow.storedData.CustomAnnounceMessage, Instance, departureHour, departureMinute);
             ImGui.Text("In-Game Chat Preview");
-            ImGui.InputTextMultiline("##parsedInGameOutput", ref parsedInGameOutput, 400, new Vector2(-1, 50), ImGuiInputTextFlags.ReadOnly);
-            if (ImGui.Button("Send Chat Announcement", new Vector2(-1, 0)))
+            ImGui.BeginChild("##parsedInGameOutput", new Vector2(-1, 50), true);
+            ImGui.PushTextWrapPos();
+            ImGui.TextWrapped(parsedInGameOutput);
+            ImGui.PopTextWrapPos();
+            ImGui.EndChild();
+
+            // --- Send Chat Announcement Button with 3s Cooldown ---
+            TimeSpan timeSinceLast = DateTime.Now - _lastAnnouncementTime;
+            bool canSend = timeSinceLast >= _announcementCooldown;
+            string sendText = canSend ? "Send Chat Announcement" : $"Send Chat Announcement ({Math.Ceiling((_announcementCooldown - timeSinceLast).TotalSeconds)}s)";
+            if (!canSend) ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.6f);
+            if (ImGui.Button(sendText, new Vector2(-1, 0)) && canSend)
+            {
                 SendChat();
+                _lastAnnouncementTime = DateTime.Now;
+            }
+            if (!canSend) ImGui.PopStyleVar();
             ImGui.EndTable();
         }
     }
@@ -321,12 +347,13 @@ internal class ConfigurationWindow : Window, IDisposable
             Aetheryte aeth = SERVICES.Data.GetExcelSheet<Aetheryte>().FirstOrDefault(a => a.PlaceName.Value.Name.ToString() == AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex]);
             TerritoryType territory = SERVICES.Data.GetExcelSheet<TerritoryType>().GetRow(aeth.Territory.RowId);
             Map map = SERVICES.Data.GetExcelSheet<Map>().GetRow(aeth.Map.RowId);
-            float mapX = ((41.0f / (map.SizeFactor / 100f)) * ((aethData.X + 1024.0f) / 2048.0f)) + 1.0f;
-            float mapY = ((41.0f / (map.SizeFactor / 100f)) * ((aethData.Y + 1024.0f) / 2048.0f)) + 1.0f;
+            float mapX = 41.0f / (map.SizeFactor / 100f) * ((aethData.X + 1024.0f) / 2048.0f) + 1.0f;
+            float mapY = 41.0f / (map.SizeFactor / 100f) * ((aethData.Y + 1024.0f) / 2048.0f) + 1.0f;
             LOG.Debug($"Map coords: {mapX}, {mapY}");
             MapLinks.SetFlag(territory.RowId, map.RowId, mapX, mapY);
         }
-        SeString msg = ParseAnnouncementmessage();
+        string parsedMessage = ParseData.Parse(ConductorWindow.storedData.CustomAnnounceMessage, Instance, departureHour, departureMinute);
+        SeString msg = new SeStringBuilder().AddText(parsedMessage).Build();
         (bool Enabled, string Prefix)[] chatTargets = new[] {(ConductorWindow.storedData.AnnounceYell, "/y "), (ConductorWindow.storedData.AnnounceShout, "/sh "), (ConductorWindow.storedData.AnnounceNN, "/b "), (ConductorWindow.storedData.AnnounceParty, "/p "), (ConductorWindow.storedData.AnnounceLS1, "/l1 "), (ConductorWindow.storedData.AnnounceLS2, "/l2 "), (ConductorWindow.storedData.AnnounceLS3, "/l3 "), (ConductorWindow.storedData.AnnounceLS4, "/l4 "), (ConductorWindow.storedData.AnnounceLS5, "/l5 "), (ConductorWindow.storedData.AnnounceLS6, "/l6 "), (ConductorWindow.storedData.AnnounceLS7, "/l7 "), (ConductorWindow.storedData.AnnounceLS8, "/l8 "), (ConductorWindow.storedData.AnnounceCWLS1, "/cwl1 "), (ConductorWindow.storedData.AnnounceCWLS2, "/cwl2 "), (ConductorWindow.storedData.AnnounceCWLS3, "/cwl3 "), (ConductorWindow.storedData.AnnounceCWLS4, "/cwl4 "), (ConductorWindow.storedData.AnnounceCWLS5, "/cwl5 "), (ConductorWindow.storedData.AnnounceCWLS6, "/cwl6 "), (ConductorWindow.storedData.AnnounceCWLS7, "/cwl7 "), (ConductorWindow.storedData.AnnounceCWLS8, "/cwl8 ")};
         foreach ((bool enabled, string prefix) in chatTargets)
         {
@@ -337,61 +364,45 @@ internal class ConfigurationWindow : Window, IDisposable
         }
     }
 
-    private string Parse() => ConductorWindow.storedData.Discord
-        .Replace("<name>", player!.Name.ToString())
-        .Replace("<server>", player!.CurrentWorld.Value.Name.ToString())
-        .Replace("<expansion>", ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex])
-        .Replace("<location>", AetheryteNames.Count > 0 ? AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex] + MapLinks.GenerateInstanceString(Instance): string.Empty)
-        .Replace("<@>", GetExpansionTag(ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex]))
-        .Replace("<time>", $"<t:{new DateTimeOffset((DateTime.Now.TimeOfDay.TotalMinutes > departureHour * 60 + departureMinute ? DateTime.Now.Date.AddDays(1).AddHours(departureHour).AddMinutes(departureMinute) : DateTime.Now.Date.AddHours(departureHour).AddMinutes(departureMinute))).ToUnixTimeSeconds()}:R>");
-
-    private SeString ParseAnnouncementmessage()
-    {
-        TimeSpan timeUntilDeparture = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local) < DateTime.Now ? new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local).AddDays(1) - DateTime.Now : new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, departureHour, departureMinute, 0, DateTimeKind.Local) - DateTime.Now;
-        string processedMessage = ConductorWindow.storedData.CustomAnnounceMessage.Replace("<name>", player != null ? player.Name.ToString() : string.Empty).Replace("<server>", player!.CurrentWorld.Value.Name.ToString()).Replace("<expansion>", ConductorWindow.Patches[ConductorWindow.storedData.selectedExpansionIndex]).Replace("<time>", $"{(int)Math.Round(timeUntilDeparture.TotalMinutes)} minute{((int)Math.Round(timeUntilDeparture.TotalMinutes) != 1 ? "s" : string.Empty)}");
-        if (processedMessage.Contains("<location>"))
-            processedMessage = processedMessage.Replace("<location>", "<flag>" + MapLinks.GenerateInstanceString(Instance));
-        return new SeStringBuilder().AddText(processedMessage).Build();
-    }
-
-    private string GetExpansionTag(string expansion)
-    {
-        return expansion switch
-        {
-            "Endwalker" => "@6.0A📢",
-            "Shadowbringers" => "@5.0A📢",
-            "ARR" or "Heavensward" or "Stormblood" => "@OldA📢",
-            _ => "@7.0A📢"
-        };
-    }
-
     private void DrawAetheryteDropdown()
     {
-        if (AetheryteNames.Count == 0) { ImGui.TextDisabled("No Aetherytes available."); return; }
-        string selectedName = AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex];
-        ImGui.PushItemWidth(250f);
-        if (ImGui.BeginCombo("##aethcombo", selectedName, ImGuiComboFlags.HeightLarge))
+        if (AetheryteNames.Count == 0)
         {
-            ImGui.PushID("filter");
-            ImGui.InputTextWithHint("##aetheryteFilter", "Search...", ref aetheryteFilter, 128);
-            ImGui.PopID();
+            ImGui.TextDisabled("No Aetherytes available.");
+            return;
+        }
+
+        string selectedName = AetheryteNames[ConductorWindow.storedData.selectedAetheryteIndex];
+
+        if (ImGui.Button(selectedName))
+            ImGui.OpenPopup("##aethpopup");
+
+        if (ImGui.BeginPopup("##aethpopup", ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            bool focus = ImGui.IsWindowAppearing();
+            ImGui.SetNextItemWidth(-1);
+            if (focus) ImGui.SetKeyboardFocusHere();
+            ImGui.InputTextWithHint("##filter", "Search...", ref aetheryteFilter, 250);
+
             string filterLower = aetheryteFilter.ToLower();
-            List<string> filteredNames = AetheryteNames.Where(name => string.IsNullOrEmpty(filterLower) || name.ToLower().Contains(filterLower)).ToList();
-            foreach (string name in filteredNames)
+            ImGui.BeginChild("##aethList", new Vector2(250, 500), true);
+
+            foreach (string name in AetheryteNames.Where(n => string.IsNullOrEmpty(filterLower) || n.ToLower().Contains(filterLower)))
             {
-                bool selected = name == selectedName;
-                if (ImGui.Selectable(name, selected))
+                bool isSelected = name == selectedName;
+                if (ImGui.Selectable(name, isSelected))
                 {
                     ConductorWindow.storedData.selectedAetheryteIndex = AetheryteNames.IndexOf(name);
                     ConductorWindow.storedData.Save();
                     aetheryteFilter = string.Empty;
                     ImGui.CloseCurrentPopup();
                 }
-                if (selected) ImGui.SetItemDefaultFocus();
+                if (isSelected) ImGui.SetItemDefaultFocus();
             }
-            ImGui.EndCombo();
+
+            ImGui.EndChild();
+            ImGui.EndPopup();
         }
-        ImGui.PopItemWidth();
     }
 
     public void Dispose() { }
