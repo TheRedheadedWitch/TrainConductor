@@ -6,6 +6,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using Lumina.Excel.Sheets;
 using System.Numerics;
 
 
@@ -203,8 +204,8 @@ internal class ConductorWindow : Window, IDisposable
         if (!canSend) ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.6f);
         if (ImGui.Button(sendText, new Vector2(-1, 28)) && canSend)
         {
-            SendChat();
             _lastSendTime = DateTime.Now;
+            SendChat();
         }
         if (!canSend) ImGui.PopStyleVar();
 
@@ -285,9 +286,25 @@ internal class ConductorWindow : Window, IDisposable
         List<MobLocation> aliveMobs = storedData.Mobs.Where(m => m.Patch.Equals(storedData.SelectedPatch, StringComparison.OrdinalIgnoreCase)).ToList();
         if (aliveMobs.Count == 0) return;
         MobLocation targetMob = aliveMobs[0];
+
+        try
+        {
+            Lumina.Excel.ExcelSheet<TerritoryType> territories = SERVICES.Data.GetExcelSheet<TerritoryType>();
+            TerritoryType territory = new TerritoryType();
+            foreach (TerritoryType t in territories)
+                if ((t.PlaceName.Value.Name.ToString()).Equals(targetMob.Zone, StringComparison.OrdinalIgnoreCase))
+                {
+                    territory = t;
+                    break;
+                }
+            if (territory.Map.RowId != 0)
+                MapLinks.SetFlag(territory.RowId, SERVICES.Data.GetExcelSheet<Map>().GetRow(territory.Map.RowId).RowId, targetMob.X, targetMob.Y);
+            else
+                LOG.Warning($"Could not find territory for zone: {targetMob.Zone}");
+        }
+        catch (Exception ex) { LOG.Error($"Failed to set map flag: {ex}"); }
         string msg = ParseData.Parse(storedData.ChatMessage.Trim(), targetMob.Instance, 0, 0, targetMob);
         if (string.IsNullOrEmpty(msg)) return;
-        LOG.Debug($"msg: {msg}");
         (bool Enabled, string Prefix, XivChatType ChatType)[] chatTargets = new[] { (storedData.Yell, "/y ", XivChatType.Yell), (storedData.Shout, "/sh ", XivChatType.Shout), (storedData.Echo, "/e ", XivChatType.Echo), (storedData.Party, "/p ", XivChatType.Party), (storedData.Say, "/s ", XivChatType.Say) };
         if (UIModule.Instance() == null) return;
         foreach ((bool enabled, string prefix, XivChatType chatType) in chatTargets)
