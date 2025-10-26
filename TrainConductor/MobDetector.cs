@@ -5,6 +5,7 @@ using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVTrainConductor;
 using Lumina.Excel.Sheets;
+using TrainConductor.Windows;
 
 namespace SRankAssistant;
 
